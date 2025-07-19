@@ -1,63 +1,28 @@
-name: build push and deploy image
-
-on: 
-  
+name: Build push and Deploy image
+on:
   push:
-    branches: [main]
-  pull_request: 
-    branches: [main]
-
+    branches:[main]
+  pull_request:
+    branches:[main]
 permissions: 
   id-token: write
   contents: read
 
-env: 
+env:
   AWS_REGION: us-east-1
   AWS_ROLE: ${{ secrets.AWS_ACTION_ROLE }}
-  ECR_REPO_NAME: dev
-  IMAGE_TAG: ${{github.run_number}}
 
 
-jobs: 
+jobs:
   build:
-    runs-on: ubuntu-latest ## github runner
-    steps: 
+    runs-on: ubuntu-latest     # github Runner
+    steps:
       - name: clone repo
-      - uses: actions/checkout@v3
+        uses: actions/checkout@v3
       - name: AWS creds config
-        uses: aws-actions/configure-aws-credentials@v4 # here put some action or a prebuild code
-        with:
-          role-to-assume: ${{ env.AWS_ROLE }}      #OIDC(Open ID Concept)
-          aws-region: ${{env.AWS_REGION}}
-      - name: Loging to ecr
+        uses: aws-actions/configure-aws-credentials@v4
+        with: 
+          role-to-asume: ${{ env.AWS_ROLE}}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: loging to ecr
         uses: aws-actions/amazon-ecr-login@v1
-        id: ecr-login
-      - name: build and tag image
-        id: build-and-push
-        run: |
-          docker build -t ${{steps.ecr-login.outputs.registry}}/${{env.ECR_REPO_NAME}}:${{env.IMAGE_TAG}} .
-          docker push ${{steps.ecr-login.outputs.registry}}/${{env.ECR_REPO_NAME}}:${{env.IMAGE_TAG}}
-
-      - name: Scan docker Immage for Vulnerabilites
-      - name: Push image to ecr
-        run: |
-          docker push ${{steps.ecr-login.outputs}}
-
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "my-app:latest"  # Scans the built image
-          format: "table"
-          exit-code: "1"
-          severity: "CRITICAL,HIGH"
-      - name: Push image to ecr
-        run: |
-          docker push ${{steps.ecr-login.outputs.registry}}/${{env.ECR_REPO_NAME}}:${{env.IMAGE_TAG}}
-
-      - name: Store image in Github env
-        run: echo "Image=${{steps.ecr-login.outputs.registry}}/${{env.ECR_REPO_NAME}}:${{env.IMAGE_TAG}}" >> $GITHUB_ENV
-
-  #Deploy:
-   # runs-on: ubuntu-latest
-   # needs: build
-   # steps: 
-      
